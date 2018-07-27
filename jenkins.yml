@@ -1,0 +1,56 @@
+---
+- hosts: target
+  remote_user: ansible
+  become: yes
+  become_method: sudo
+  connection: ssh
+  gather_facts: yes
+  vars:
+     username: myuser
+  tasks:
+   - name: Installing telnet on my target nodes
+     yum:
+       name: httpd 
+       state: latest 
+   - name: Installing httpd on my target nodes
+     service:
+       name: httpd
+       state: restarted
+   - name: creating html file
+     file:
+       path: /var/www/html/index.html
+       state: touch
+       #owner: ansible
+       #group: ansible
+       mode: 0755
+   - name: adding new file
+     lineinfile: 
+       path: /var/www/html/index.html
+       #owner: ansible
+       #group: ansible
+       state: present
+       line: 'Hey Ansible test'
+     notify:
+         - restart
+   - name: stopping firewalls  
+     service:
+       name: firewalld
+       state: stopped
+   - name: Startng docker
+     service:
+       name: docker
+       state: started     
+     delegate_to: node1.blr.com
+   - name: Restart a container
+     docker_container:
+       name: d3b9324ddd5f 
+       image: docker.io/ubuntu 
+       state: started
+       #restart: yes
+     delegate_to: node1.blr.com 
+  handlers:
+   - name: restart
+     service:
+       name: httpd
+       state: restarted
+     ignore_errors: yes
